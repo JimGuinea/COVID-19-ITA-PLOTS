@@ -8,6 +8,8 @@ This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
 
 ```{r}
+actual_date<-Sys.Date()
+
 library(readr)
 df <- read_csv("dpc-covid19-ita-andamento-nazionale.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
 
@@ -17,8 +19,8 @@ df
 ```{r}
 library(ggplot2)
 
-plot_ricoverati_ <- ggplot(df, aes(data, casi)) + 
-  geom_smooth(aes(y = ricoverati_con_sintomi, colour = "RCS")) +
+plot<- ggplot(df, aes(data, casi)) + 
+  geom_line(aes(y = ricoverati_con_sintomi, colour = "RCS")) +
   geom_line(aes(y = terapia_intensiva, colour = "TI")) + 
   geom_line(aes(y = totale_ospedalizzati, colour = "TO")) +
   geom_line(aes(y = isolamento_domiciliare, colour = "ID")) +
@@ -31,6 +33,8 @@ plot
 ```
 
 ```{r}
+plot_title <- paste("COVID19 ITA", actual_date)
+
 plot_NAP<- ggplot(df) + 
   geom_line(aes(y = nuovi_attualmente_positivi, x=data, colour = "Nuovi Attualmente Positivi")) +
   geom_line(aes(y = totale_casi,x=data, colour = "Totale Casi")) +
@@ -39,6 +43,25 @@ plot_NAP<- ggplot(df) +
   geom_text(aes(y = totale_casi,x=data,label = round(totale_casi, 1), vjust = -2, hjust = 1, show.legend = FALSE, colour="Totale Casi"))+
   ylim(c(0,max(df$totale_casi+1000)))+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top")+
-  labs(color = "", y="Numero casi", x = "Data (mese-giorno)", title = "COVID19 ITA")
+  labs(color = "", y="Numero casi", x = "Data (mese-giorno)", title = plot_title)
 plot_NAP
 ```
+
+```{r}
+df_world <- read_excel("COVID-19-geographic-disbtribution-worldwide-2020-03-11.xls",col_types = c("date", "text", "numeric","numeric", "text", "text", "text")) 
+df_world
+```
+
+```{r}
+library(dplyr)
+df_EU <- filter(df_world, EU== "EU")
+df_EU <- filter(df_EU, DateRep >"2020-02-23", NewConfCases >50)
+df_EU
+```
+
+```{r}
+plot_EU <- ggplot(df_EU)+
+  geom_line(aes(y = NewConfCases, x=DateRep, colour = CountryExp))
+plot_EU
+```
+
