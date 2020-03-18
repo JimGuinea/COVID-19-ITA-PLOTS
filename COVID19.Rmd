@@ -25,6 +25,7 @@ fontsize=24
 library(readr)
 library(gridExtra)
 library(grid)
+library(dplyr)
 
 df <- read_csv("dpc-covid19-ita-andamento-nazionale.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
 
@@ -78,7 +79,7 @@ plot_ITA<- ggplot(df) +
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
   geom_text(aes(y = nuovi_attualmente_positivi,x=data,label = round(nuovi_attualmente_positivi, 1), vjust = -1, hjust =0.5 , show.legend = FALSE, colour="Nuovi Attualmente Positivi"))+
   geom_text(aes(y = totale_casi,x=data,label = round(totale_casi, 1), vjust = -1, hjust = 1, show.legend = FALSE, colour="Totale Casi"))+
-  ylim(c(0,max(df$totale_casi+1000)))+
+  ylim(c(0,max(df$totale_casi+10000)))+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(color = "", y="Numero casi", x = "Data (mese-giorno)", title = plot_title_ITA)+
   labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
@@ -95,10 +96,9 @@ plot_ITA_Log<- ggplot(df) +
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
   geom_text(aes(y = nuovi_attualmente_positivi,x=data,label = round(nuovi_attualmente_positivi, 1), vjust = 1.5, hjust =+0.5 , colour="Nuovi Attualmente Positivi"))+
   geom_text(aes(y = totale_casi,x=data,label = round(totale_casi, 1), vjust = -0.25, hjust = 1, show.legend = FALSE, colour="Totale Casi"))+
-  ylim(c(0,max(df$totale_casi+1200)))+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(color = "", y="Numero casi (Log)", x = "Data (mese-giorno)", title = plot_title_ITA_Log)+
-  scale_y_log10()+
+  scale_y_continuous(trans="log10", limits=c(NA,100000))+
   annotation_logticks(sides="lr")+
   labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
   theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))
@@ -239,7 +239,7 @@ plot_REG_TerapiaInt <-df_reg %>% subset(denominazione_regione %in% c('Toscana','
   geom_line()+
   geom_text( vjust = -1, hjust =+0.5)+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
-  scale_y_continuous(trans="log10", limits=c(NA,1200))+
+  scale_y_continuous(trans="log10", limits=c(NA,10000))+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
   theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))+
@@ -272,7 +272,7 @@ plot_REG_TotaleAttPosCasi <-df_reg %>% subset(denominazione_regione %in% c('Tosc
   geom_line()+
   #geom_text( vjust = -1, hjust =+0.5)+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
-  scale_y_continuous(trans="log10", limits=c(NA,100000))+
+  scale_y_continuous(trans="log10", limits=c(NA,50000))+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
   theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))+
