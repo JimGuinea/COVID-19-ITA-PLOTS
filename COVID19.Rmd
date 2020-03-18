@@ -13,17 +13,27 @@ actual_date<-Sys.Date()
 date_strings = c(as.Date("2020-02-24"), actual_date)
 datetimes = strptime(date_strings, format = "%Y-%m-%d") 
 datetimes
-days = difftime(as.Date(datetimes[2]), as.Date(datetimes[1]), units = c("days"))+1 # days
+days = difftime(as.Date(datetimes[2]), as.Date(datetimes[1]), units = c("days")) # days
 days
+
+fontsize=24
 ```
 
 
 ```{r}
 
 library(readr)
+library(gridExtra)
+library(grid)
+
 df <- read_csv("dpc-covid19-ita-andamento-nazionale.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
 
-df    
+df_reg <- read_csv("dpc-covid19-ita-regioni.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
+
+df_prov <- read_csv("dpc-covid19-ita-province.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
+
+
+df 
 ```
 
 ```{r}
@@ -39,20 +49,23 @@ slope<- 0.0322*4/(4*365+1)
 int <- 18316 -slope*as.integer(df[1,]$data)
 
 plot_ITA_All_Log<- ggplot(df, aes(data, totale_casi)) + 
-  geom_line(aes(y = ricoverati_con_sintomi, colour = "Ricoverati con Sintomi")) +
+  geom_line(aes(y = ricoverati_con_sintomi, colour = "Ric. con Sintomi")) +
   geom_line(aes(y = terapia_intensiva, colour = "Terapia Intensiva")) + 
-  geom_line(aes(y = totale_ospedalizzati, colour = "Totale Osp.")) +
+  geom_line(aes(y = totale_ospedalizzati, colour = "Tot. Osp.")) +
   geom_line(aes(y = isolamento_domiciliare, colour = "Isol. Domic.")) +
-  geom_line(aes(y = totale_attualmente_positivi, colour = "Totale Attualmente Positivi")) +
-  geom_line(aes(y = nuovi_attualmente_positivi, colour = "Nuovi Attualmente Positivi")) +
-  geom_line(aes(y = totale_casi, colour = "Totale Casi")) +
+  geom_line(aes(y = totale_attualmente_positivi, colour = "Tot. Att. Pos.")) +
+  geom_line(aes(y = nuovi_attualmente_positivi, colour = "Nuovi Att. Pos.")) +
+  geom_line(aes(y = totale_casi, colour = "Tot. Casi")) +
   geom_line(aes(y = tamponi/100, colour = "Tamponi (x100)")) +
+  geom_line(aes(y = deceduti, colour = "Deceduti")) +
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
-  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top")+
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(color = "",y="Numero casi", x = "Data (mese-giorno)", title = plot_title_ITA_Log)+
   scale_y_log10()+
   geom_abline(a=15, b=15, col="blue")+
-  annotation_logticks(sides="lr") 
+  annotation_logticks(sides="lr") +
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))
 plot_ITA_All_Log
 ```
 
@@ -64,10 +77,12 @@ plot_ITA<- ggplot(df) +
   geom_line(aes(y = totale_casi,x=data, colour = "Totale Casi")) +
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
   geom_text(aes(y = nuovi_attualmente_positivi,x=data,label = round(nuovi_attualmente_positivi, 1), vjust = -1, hjust =0.5 , show.legend = FALSE, colour="Nuovi Attualmente Positivi"))+
-  geom_text(aes(y = totale_casi,x=data,label = round(totale_casi, 1), vjust = -2, hjust = 1, show.legend = FALSE, colour="Totale Casi"))+
+  geom_text(aes(y = totale_casi,x=data,label = round(totale_casi, 1), vjust = -1, hjust = 1, show.legend = FALSE, colour="Totale Casi"))+
   ylim(c(0,max(df$totale_casi+1000)))+
-  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top")+
-  labs(color = "", y="Numero casi", x = "Data (mese-giorno)", title = plot_title_ITA)
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(color = "", y="Numero casi", x = "Data (mese-giorno)", title = plot_title_ITA)+
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))
 plot_ITA
 ```
 
@@ -80,11 +95,13 @@ plot_ITA_Log<- ggplot(df) +
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
   geom_text(aes(y = nuovi_attualmente_positivi,x=data,label = round(nuovi_attualmente_positivi, 1), vjust = 1.5, hjust =+0.5 , colour="Nuovi Attualmente Positivi"))+
   geom_text(aes(y = totale_casi,x=data,label = round(totale_casi, 1), vjust = -0.25, hjust = 1, show.legend = FALSE, colour="Totale Casi"))+
-  ylim(c(0,max(df$totale_casi+1000)))+
-  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top")+
+  ylim(c(0,max(df$totale_casi+1200)))+
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(color = "", y="Numero casi (Log)", x = "Data (mese-giorno)", title = plot_title_ITA_Log)+
   scale_y_log10()+
-  annotation_logticks(sides="lr") 
+  annotation_logticks(sides="lr")+
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))
 plot_ITA_Log
 ```
 ```{r}
@@ -121,8 +138,10 @@ plot_ITA_rap <- ggplot(df_RAP, aes(data, percentuale)) +
   geom_line(aes(y = df_RAP$'Terapia Int/Tot Casi', colour = 'Terapia Int/Tot Casi')) +
   geom_line(aes(y = df_RAP$'Dimessi Guariti/Tot Casi', colour = 'Dimessi Guariti/Tot Casi'))+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
-  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top")+
-  labs(color = "", y="Percentuale (%)", x = "Data (mese-giorno)", title = plot_title_ITA_rap)
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(color = "", y="Percentuale (%)", x = "Data (mese-giorno)", title = plot_title_ITA_rap)+
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))
 plot_ITA_rap
 ```
 
@@ -131,32 +150,184 @@ plot_POP_ITA_rap <- ggplot(df_RAP, aes(data, percentuale)) +
   geom_line(aes(y = df_RAP$'Tot Casi/Pop Ita', colour = 'Tot Casi/Pop Ita'))+
   geom_line(aes(y = df_RAP$'Tamponi/Pop Ita', colour = 'Tamponi/Pop Ita'))+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
-  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top")+
-  labs(color = "", y="Percentuale (%)", x = "Data (mese-giorno)", title = plot_title)
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(color = "", y="Percentuale (%)", x = "Data (mese-giorno)", title = plot_title_ITA)+
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))
 
 plot_POP_ITA_rap
 ```
 
 ```{r}
 
-jpeg("COVID19_ITA_plot_1.jpg", width = 750, height = 574)
+df_reg_lom <-subset(df_reg,denominazione_regione=='Lombardia', select = c('data','ricoverati_con_sintomi', 'terapia_intensiva','totale_ospedalizzati','isolamento_domiciliare','totale_attualmente_positivi', 'nuovi_attualmente_positivi','dimessi_guariti', 'deceduti', 'totale_casi','tamponi' ))
+
+df_reg_tos <- subset(df_reg,denominazione_regione=='Toscana', select = c('data','ricoverati_con_sintomi', 'terapia_intensiva','totale_ospedalizzati','isolamento_domiciliare','totale_attualmente_positivi', 'nuovi_attualmente_positivi','dimessi_guariti', 'deceduti', 'totale_casi','tamponi' ))
+
+df_reg_vda <- subset(df_reg,denominazione_regione=="Valle d'Aosta", select = c('data','ricoverati_con_sintomi', 'terapia_intensiva','totale_ospedalizzati','isolamento_domiciliare','totale_attualmente_positivi', 'nuovi_attualmente_positivi','dimessi_guariti', 'deceduti', 'totale_casi','tamponi' ))
+
+df_reg_pie <- subset(df_reg,denominazione_regione=="Piemonte", select = c('data','ricoverati_con_sintomi', 'terapia_intensiva','totale_ospedalizzati','isolamento_domiciliare','totale_attualmente_positivi', 'nuovi_attualmente_positivi','dimessi_guariti', 'deceduti', 'totale_casi','tamponi' ))
+
+df_reg_lig <- subset(df_reg,denominazione_regione=="Liguria", select = c('data','ricoverati_con_sintomi', 'terapia_intensiva','totale_ospedalizzati','isolamento_domiciliare','totale_attualmente_positivi', 'nuovi_attualmente_positivi','dimessi_guariti', 'deceduti', 'totale_casi','tamponi' ))
+
+df_reg_lom 
+df_reg_tos 
+df_reg_vda
+```
+
+
+```{r}
+
+plot_title_REG_TotCasi<- paste("COVID19 ITA - Alcune Regioni - Totale Casi", actual_date)
+
+plot_REG_TotCasi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=totale_casi, color=denominazione_regione, label=totale_casi)) +
+  geom_line()+
+  #geom_text( vjust = -1, hjust =+0.5)+
+  scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
+  scale_y_continuous(trans="log10", limits=c(NA,100000))+
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))+
+  labs(color = "",y="Numero casi (Log)", x = "Data (mese-giorno)", title =plot_title_REG_TotCasi)+
+  annotation_logticks(sides="lr")
+
+plot_REG_TotCasi
+
+```
+
+```{r}
+plot_title_REG_Morti<- paste("COVID19 ITA - Alcune Regioni - Morti", actual_date)
+
+plot_REG_Morti <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=deceduti, color=denominazione_regione, label=deceduti)) +
+  geom_line()+
+  geom_text( vjust = -1, hjust =+0.5)+
+  scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
+  scale_y_continuous(trans="log10", limits=c(NA,10000))+
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))+
+  labs(color = "",y="Numero casi (Log)", x = "Data (mese-giorno)", title =plot_title_REG_Morti)+
+  annotation_logticks(sides="lr")
+
+plot_REG_Morti
+```
+
+```{r}
+plot_title_REG_Tamponi<- paste("COVID19 ITA - Alcune Regioni - Tamponi", actual_date)
+
+plot_REG_Tamponi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=tamponi, color=denominazione_regione, label=tamponi)) +
+  geom_line()+
+  #geom_text( vjust = -1, hjust =+0.5)+
+  scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
+  scale_y_continuous(trans="log10", limits=c(NA,100000))+
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))+
+  labs(color = "",y="Numero casi (Log)", x = "Data (mese-giorno)", title =plot_title_REG_Tamponi)+
+  annotation_logticks(sides="lr")
+
+plot_REG_Tamponi
+```
+
+
+```{r}
+plot_title_REG_TerapiaInt<- paste("COVID19 ITA - Alcune Regioni - Terapia Intensiva", actual_date)
+
+#source for subsetting: https://stackoverflow.com/questions/5680819/subset-a-data-frame-using-or-when-the-column-contains-a-factor
+
+plot_REG_TerapiaInt <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=terapia_intensiva, color=denominazione_regione, label=terapia_intensiva)) +
+  geom_line()+
+  geom_text( vjust = -1, hjust =+0.5)+
+  scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
+  scale_y_continuous(trans="log10", limits=c(NA,1200))+
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))+
+  labs(color = "",y="Numero casi (Log)", x = "Data (mese-giorno)", title =plot_title_REG_TerapiaInt)+
+  annotation_logticks(sides="lr")
+plot_REG_TerapiaInt
+```
+
+```{r}
+plot_title_REG_NuoviCasi<- paste("COVID19 ITA - Alcune Regioni - Nuovi Attualmente Positivi", actual_date)
+
+plot_REG_NuoviCasi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=nuovi_attualmente_positivi, color=denominazione_regione, label=nuovi_attualmente_positivi)) +
+  geom_line()+
+  geom_text( vjust = -1, hjust =+0.5)+
+  scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
+  scale_y_continuous(trans="log10", limits=c(NA,10000))+
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))+
+  labs(color = "",y="Numero casi (Log)", x = "Data (mese-giorno)", title =plot_title_REG_NuoviCasi)+
+  annotation_logticks(sides="lr")
+
+plot_REG_NuoviCasi
+```
+
+```{r}
+plot_title_REG_TotaleAttPosCasi<- paste("COVID19 ITA - Alcune Regioni - Totale Attualmente Positivi", actual_date)
+
+plot_REG_TotaleAttPosCasi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=totale_attualmente_positivi, color=denominazione_regione, label=totale_attualmente_positivi)) +
+  geom_line()+
+  #geom_text( vjust = -1, hjust =+0.5)+
+  scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
+  scale_y_continuous(trans="log10", limits=c(NA,100000))+
+  theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))+
+  labs(color = "",y="Numero casi (Log)", x = "Data (mese-giorno)", title =plot_title_REG_TotaleAttPosCasi)+
+  annotation_logticks(sides="lr")
+plot_REG_TotaleAttPosCasi
+```
+
+
+```{r}
+low_res_width =750
+low_res_height =574
+
+high_res_width =1024
+high_res_height =768
+
+
+jpeg("COVID19_ITA_plot_1.jpg", width = high_res_width, height =high_res_height)
 plot_ITA_All_Log
 dev.off()
 
-jpeg("COVID19_ITA_plot_2.jpg", width = 750, height = 574)
+jpeg("COVID19_ITA_plot_2.jpg", width = high_res_width, height =high_res_height)
 plot_ITA
 dev.off()
 
-jpeg("COVID19_ITA_plot_3.jpg", width = 750, height = 574)
+jpeg("COVID19_ITA_plot_3.jpg", width = high_res_width, height =high_res_height)
 plot_ITA_Log
 dev.off()
 
-jpeg("COVID19_ITA_plot_4.jpg", width = 750, height = 574)
+jpeg("COVID19_ITA_plot_4.jpg", width = high_res_width, height =high_res_height)
 plot_ITA_rap
 dev.off()
 
-jpeg("COVID19_ITA_plot_5.jpg", width = 750, height = 574)
+jpeg("COVID19_ITA_plot_5.jpg", width = high_res_width, height =high_res_height)
 plot_POP_ITA_rap
+dev.off()
+
+jpeg("COVID19_ITA_REG_plot_1.jpg", width = high_res_width, height =high_res_height)
+plot_REG_Morti
+dev.off()
+
+jpeg("COVID19_ITA_REG_plot_2.jpg", width = high_res_width, height =high_res_height)
+  plot_REG_NuoviCasi
+dev.off()
+
+jpeg("COVID19_ITA_REG_plot_3.jpg", width = high_res_width, height =high_res_height)
+  plot_REG_Tamponi
+dev.off()
+
+jpeg("COVID19_ITA_REG_plot_4.jpg", width = high_res_width, height =high_res_height)
+  plot_REG_TerapiaInt
+dev.off()
+
+jpeg("COVID19_ITA_REG_plot_5.jpg", width = high_res_width, height =high_res_height)
+plot_REG_TotaleAttPosCasi
 dev.off()
 ```
 
