@@ -17,7 +17,7 @@ days = difftime(as.Date(datetimes[2]), as.Date(datetimes[1]), units = c("days"))
 days
 
 fontsize=24
-linesize=2
+linesize=1
 textsize=7.5
 ```
 
@@ -28,13 +28,24 @@ library(readr)
 library(gridExtra)
 library(grid)
 library(dplyr)
+library(readxl)
 
-df <- read_csv("dpc-covid19-ita-andamento-nazionale.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
+df <- read_csv("csv/dpc-covid19-ita-andamento-nazionale.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
 
-df_reg <- read_csv("dpc-covid19-ita-regioni.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
+df_reg <- read_csv("csv/dpc-covid19-ita-regioni.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
 
-df_prov <- read_csv("dpc-covid19-ita-province.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
+df_prov <- read_csv("csv/dpc-covid19-ita-province.csv", col_types = cols(data = col_date(format = "%Y-%m-%d %H:%M:%S"))) 
 
+df_world <- read_excel("csv/COVID-19-geographic-disbtribution-worldwide-2020-03-23.xlsx",col_types =c("date", "numeric", "numeric","numeric", "numeric", "numeric", "text", "text"))
+
+
+
+library(anytime)
+df_world$data <- anytime::anydate(df_world$DateRep)
+df_world_last <- df_world %>% subset(GeoId %in% stati ) %>% filter(DateRep==max(DateRep)) # OOOOKKK!
+df_world_last$data <- anytime::anydate(df_world_last$DateRep)
+LastVal_df <- df %>% # last trading day
+  slice(which.max(data))
 
 df 
 ```
@@ -48,9 +59,6 @@ df_linea <- data.frame(a = c(0,1000),b= 0.704)
 library(ggplot2)
 plot_title_ITA_Log <- paste("COVID19 ITA Log", actual_date)
 
-slope<- 0.0322*4/(4*365+1)
-int <- 18316 -slope*as.integer(df[1,]$data)
-
 plot_ITA_All_Log<- ggplot(df, aes(data, totale_casi)) + 
   geom_line(size=linesize,aes(y = ricoverati_con_sintomi, colour = "Ric. con Sintomi")) +
   geom_line(size=linesize,aes(y = terapia_intensiva, colour = "Terapia Intensiva")) + 
@@ -61,6 +69,37 @@ plot_ITA_All_Log<- ggplot(df, aes(data, totale_casi)) +
   geom_line(size=linesize,aes(y = totale_casi, colour = "Tot. Casi")) +
   geom_line(size=linesize,aes(y = tamponi/100, colour = "Tamponi (x100)")) +
   geom_line(size=linesize,aes(y = deceduti, colour = "Deceduti")) +
+  
+  geom_point(data = LastVal_df, aes(x =data, y = deceduti,colour = "Deceduti"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = deceduti,label = round(deceduti, 1),colour = "Deceduti"), size = textsize, vjust = 2.5) +
+  
+  geom_point(data = LastVal_df, aes(x =data, y = ricoverati_con_sintomi,colour = "Ric. con Sintomi"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = ricoverati_con_sintomi,label = round(ricoverati_con_sintomi, 1),colour = "Ric. con Sintomi"), size = textsize, vjust = 2.5) +
+  
+  geom_point(data = LastVal_df, aes(x =data, y = terapia_intensiva,colour = "Terapia Intensiva"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = terapia_intensiva,label = round(terapia_intensiva, 1),colour = "Terapia Intensiva"), size = textsize, vjust = 2.5) +
+  
+  geom_point(data = LastVal_df, aes(x =data, y = totale_ospedalizzati,colour = "Tot. Osp."), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = totale_ospedalizzati,label = round(totale_ospedalizzati, 1),colour = "Tot. Osp."), size = textsize, vjust = 2.5) +
+
+  geom_point(data = LastVal_df, aes(x =data, y = isolamento_domiciliare,colour = "Isol. Domic."), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = isolamento_domiciliare,label = round(isolamento_domiciliare, 1),colour = "Isol. Domic."), size = textsize, vjust = 2.5) +
+  
+  geom_point(data = LastVal_df, aes(x =data, y = totale_attualmente_positivi,colour = "Tot. Att. Pos."), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = totale_attualmente_positivi,label = round(totale_attualmente_positivi, 1),colour = "Tot. Att. Pos."), size = textsize, vjust = 2.5) +    
+
+  geom_point(data = LastVal_df, aes(x =data, y = nuovi_attualmente_positivi,colour = "Nuovi Att. Pos."), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = nuovi_attualmente_positivi,label = round(nuovi_attualmente_positivi, 1),colour = "Nuovi Att. Pos."), size = textsize, vjust = 2.5) +     
+
+  geom_point(data = LastVal_df, aes(x =data, y = totale_casi,colour = "Tot. Casi"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = totale_casi,label = round(totale_casi, 1),colour = "Tot. Casi"), size = textsize, vjust = 2.5) +    
+ 
+  geom_point(data = LastVal_df, aes(x =data, y = tamponi/100,colour = "Tamponi (x100)"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = tamponi/100,label = round(tamponi/100, 1),colour = "Tamponi (x100)"), size = textsize, vjust = 2.5) +   
+  
+  geom_point(data = LastVal_df, aes(x =data, y =deceduti,colour = "Deceduti"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = deceduti,label = round(deceduti, 1),colour = "Deceduti"), size = textsize, vjust = 2.5) +    
+       
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(color = "",y="Numero casi (Log)", x = "Data (mese-giorno)", title = plot_title_ITA_Log)+
@@ -79,14 +118,24 @@ plot_ITA<- ggplot(df) +
   geom_line(size=linesize,aes(y = nuovi_attualmente_positivi, x=data, colour = "Nuovi Attualmente Positivi")) +
   geom_line(size=linesize,aes(y = totale_casi,x=data, colour = "Totale Casi")) +
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
-  geom_text(size=textsize, aes(y = nuovi_attualmente_positivi,x=data,label = round(nuovi_attualmente_positivi, 1), vjust = -1, hjust =0.5 , show.legend = FALSE, colour="Nuovi Attualmente Positivi"))+
-  geom_text(size=textsize, aes(y = totale_casi,x=data,label = round(totale_casi, 1), vjust = -1, hjust = 1, show.legend = FALSE, colour="Totale Casi"))+
+  #geom_text(size=textsize, aes(y = nuovi_attualmente_positivi,x=data,label = round(nuovi_attualmente_positivi, 1), vjust = -1, hjust =0.5 , show.legend = FALSE, colour="Nuovi Attualmente Positivi"))+
+  #geom_text(size=textsize, aes(y = totale_casi,x=data,label = round(totale_casi, 1), vjust = -1, hjust = 1, show.legend = FALSE, colour="Totale Casi"))+
+  
+  geom_point(data = LastVal_df, aes(x =data, y =nuovi_attualmente_positivi,colour = "Nuovi Attualmente Positivi"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = nuovi_attualmente_positivi,label = round(nuovi_attualmente_positivi, 1),colour = "Nuovi Attualmente Positivi"), size = textsize, vjust = -1) +    
+  
+  geom_point(data = LastVal_df, aes(x =data, y =totale_casi,colour = "Totale Casi"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = totale_casi,label = round(totale_casi, 1),colour = "Totale Casi"), size = textsize, vjust = -0.5) +      
+  
   ylim(c(0,max(df$totale_casi+10000)))+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(color = "", y="Numero casi", x = "Data (mese-giorno)", title = plot_title_ITA)+
   labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
   theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))
 plot_ITA
+
+
+
 ```
 
 ```{r}
@@ -96,9 +145,16 @@ plot_ITA_Log<- ggplot(df) +
   geom_line(size=linesize,aes(y = nuovi_attualmente_positivi, x=data, colour = "Nuovi Attualmente Positivi")) +
   geom_line(size=linesize,aes(y = totale_casi,x=data, colour = "Totale Casi")) +
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
-  geom_text(size=textsize, aes(y = nuovi_attualmente_positivi,x=data,label = round(nuovi_attualmente_positivi, 1), vjust = 1.5, hjust =+0.5 , colour="Nuovi Attualmente Positivi"))+
-  geom_text(size=textsize, aes(y = totale_casi,x=data,label = round(totale_casi, 1), vjust = -0.25, hjust = 1, show.legend = FALSE, colour="Totale Casi"))+
+  #geom_text(size=textsize, aes(y = nuovi_attualmente_positivi,x=data,label = round(nuovi_attualmente_positivi, 1), vjust = 1.5, hjust =+0.5 , colour="Nuovi Attualmente Positivi"))+
+  #geom_text(size=textsize, aes(y = totale_casi,x=data,label = round(totale_casi, 1), vjust = -0.25, hjust = 1, show.legend = FALSE, colour="Totale Casi"))+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  
+  geom_point(data = LastVal_df, aes(x =data, y =nuovi_attualmente_positivi,colour = "Nuovi Attualmente Positivi"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = nuovi_attualmente_positivi,label = round(nuovi_attualmente_positivi, 1),colour = "Nuovi Attualmente Positivi"), size = textsize, vjust = -0.5) +  
+
+  geom_point(data = LastVal_df, aes(x =data, y =totale_casi,colour = "Totale Casi"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = totale_casi,label = round(totale_casi, 1),colour = "Totale Casi"), size = textsize, vjust = -0.5) +      
+  
   labs(color = "", y="Numero casi (Log)", x = "Data (mese-giorno)", title = plot_title_ITA_Log)+
   scale_y_continuous(trans="log10", limits=c(NA,100000))+
   annotation_logticks(sides="lr")+
@@ -114,16 +170,18 @@ plot_ITA_Log_AltCaus<- ggplot(df) +
   geom_line(size=linesize,aes(y = deceduti, x=data, colour = "Covid19")) +
   #geom_text(size=textsize, aes(y = deceduti,x=data,label = round(deceduti, 1), vjust = 1.5, hjust =+0.5 , colour="Deceduti"))+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
+  
+  geom_point(data = LastVal_df, aes(x =data, y = deceduti,colour = "Covid19"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = deceduti,label = round(deceduti, 1),colour = "Covid19"), size = textsize, vjust =-0.5) +  
+  
   geom_hline(aes(yintercept = 3334, colour="Incidenti stradali"),size=linesize)+ #incidenti stradali
   geom_hline(aes(yintercept = 1133, colour="Sul lavoro"),size=linesize)+ #morti sul lavoro
   geom_hline(aes(yintercept = 3780, colour="Suicidi (2016)"),size=linesize)+ #sucidi
   geom_hline(aes(yintercept = 357, colour="Omicidi (2017)"),size=linesize)+ #omicidi  357
-
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(color = "", y="Numero Decessi", x = "Data (mese-giorno)", title =plot_title_ITA_Log_AltCaus)+
   #scale_y_continuous(trans="log10", limits=c(NA,10000))+
-  scale_y_continuous( limits=c(NA,4000))+
-  #annotation_logticks(sides="lr")+
+  scale_y_continuous( limits=c(NA,8000))+
   labs(caption="Data source: 
   -https://github.com/pcm-dpc/COVID-19 
   -https://www.vegaengineering.com/dati-osservatorio/allegati/Statistiche-morti-lavoro-Osservatorio-sicurezza-lavoro-Vega-Engineering-31-12-2018.pdf 
@@ -149,6 +207,10 @@ plot_ITA_Log_AltCaus_TumResp<- ggplot(df) +
   labs(color = "", y="Numero Decessi", x = "Data (mese-giorno)", title =plot_title_ITA_Log_AltCaus_TumResp)+
   #scale_y_continuous(trans="log10", limits=c(NA,10000))+
   scale_y_continuous( limits=c(NA,70000))+
+  
+  geom_point(data = LastVal_df, aes(x =data, y = deceduti,colour = "Covid19"), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df, aes(x =data, y = deceduti,label = round(deceduti, 1),colour = "Covid19"), size = textsize, vjust =-0.5) +  
+    
   #annotation_logticks(sides="lr")+
   labs(caption="Data source: \n -https://github.com/pcm-dpc/COVID-19 \n -https://www.istat.it/it/files/2017/05/Report-cause-di-morte-2003-14.pdf \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
   theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))
@@ -179,6 +241,10 @@ df_RAP[6] <- data.frame(df[12]/ITA_POP)*100
 df_RAP[7] <- data.frame(df[4]/df[11])*100
 df_RAP[8] <- data.frame(df[9]/df[11])*100
 colnames(df_RAP)[1:8] <- df_RAP_colnames
+
+LastVal_df_RAP <- df_RAP %>% # last trading day
+  slice(which.max(data))
+
 ```
 
 ```{r}
@@ -190,6 +256,19 @@ plot_ITA_rap <- ggplot(df_RAP, aes(data, percentuale)) +
   geom_line(size=linesize,aes(y = df_RAP$'Terapia Int/Tot Casi', colour = 'Terapia Int/Tot Casi')) +
   geom_line(size=linesize,aes(y = df_RAP$'Dimessi Guariti/Tot Casi', colour = 'Dimessi Guariti/Tot Casi'))+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
+  
+  geom_point(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Deceduti/Tot Casi',colour = 'Deceduti/Tot Casi'), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Deceduti/Tot Casi',label = round(LastVal_df_RAP$'Deceduti/Tot Casi', 1),colour = 'Deceduti/Tot Casi'), size = textsize, vjust =-0.5) +
+  
+  geom_point(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Tot Casi/Tamponi',colour = 'Tot Casi/Tamponi'), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Tot Casi/Tamponi',label = round(LastVal_df_RAP$'Tot Casi/Tamponi', 1),colour = 'Tot Casi/Tamponi'), size = textsize, vjust =-0.5) +  
+
+  geom_point(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Terapia Int/Tot Casi',colour = 'Terapia Int/Tot Casi'), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Terapia Int/Tot Casi',label = round(LastVal_df_RAP$'Terapia Int/Tot Casi', 1),colour = 'Terapia Int/Tot Casi'), size = textsize, vjust =-0.5) +  
+  
+  geom_point(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Dimessi Guariti/Tot Casi',colour = 'Dimessi Guariti/Tot Casi'), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Dimessi Guariti/Tot Casi',label = round(LastVal_df_RAP$'Dimessi Guariti/Tot Casi', 1),colour = 'Dimessi Guariti/Tot Casi'), size = textsize, vjust =-0.5) +    
+  
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(color = "", y="Percentuale (%)", x = "Data (mese-giorno)", title = plot_title_ITA_rap)+
   labs(caption="Data soruce: https://github.com/pcm-dpc/COVID-19 \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
@@ -201,6 +280,13 @@ plot_ITA_rap
 plot_POP_ITA_rap <- ggplot(df_RAP, aes(data, percentuale)) + 
   geom_line(size=linesize,aes(y = df_RAP$'Tot Casi/Pop Ita', colour = 'Tot Casi/Pop Ita'))+
   geom_line(size=linesize,aes(y = df_RAP$'Tamponi/Pop Ita', colour = 'Tamponi/Pop Ita'))+
+  
+  geom_point(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Tot Casi/Pop Ita',colour = 'Tot Casi/Pop Ita'), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Tot Casi/Pop Ita',label = round(LastVal_df_RAP$'Tot Casi/Pop Ita', 1),colour = 'Tot Casi/Pop Ita'), size = textsize, vjust =-0.5) +  
+  geom_point(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Tamponi/Pop Ita',colour = 'Tamponi/Pop Ita'), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = LastVal_df_RAP, aes(x =data, y = LastVal_df_RAP$'Tamponi/Pop Ita',label = round(LastVal_df_RAP$'Tamponi/Pop Ita', 1),colour = 'Tamponi/Pop Ita'), size = textsize, vjust =-0.5) +  
+  
+  
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
   labs(color = "", y="Percentuale (%)", x = "Data (mese-giorno)", title = plot_title_ITA)+
@@ -211,20 +297,7 @@ plot_POP_ITA_rap
 ```
 
 ```{r}
-
-df_reg_lom <-subset(df_reg,denominazione_regione=='Lombardia', select = c('data','ricoverati_con_sintomi', 'terapia_intensiva','totale_ospedalizzati','isolamento_domiciliare','totale_attualmente_positivi', 'nuovi_attualmente_positivi','dimessi_guariti', 'deceduti', 'totale_casi','tamponi' ))
-
-df_reg_tos <- subset(df_reg,denominazione_regione=='Toscana', select = c('data','ricoverati_con_sintomi', 'terapia_intensiva','totale_ospedalizzati','isolamento_domiciliare','totale_attualmente_positivi', 'nuovi_attualmente_positivi','dimessi_guariti', 'deceduti', 'totale_casi','tamponi' ))
-
-df_reg_vda <- subset(df_reg,denominazione_regione=="Valle d'Aosta", select = c('data','ricoverati_con_sintomi', 'terapia_intensiva','totale_ospedalizzati','isolamento_domiciliare','totale_attualmente_positivi', 'nuovi_attualmente_positivi','dimessi_guariti', 'deceduti', 'totale_casi','tamponi' ))
-
-df_reg_pie <- subset(df_reg,denominazione_regione=="Piemonte", select = c('data','ricoverati_con_sintomi', 'terapia_intensiva','totale_ospedalizzati','isolamento_domiciliare','totale_attualmente_positivi', 'nuovi_attualmente_positivi','dimessi_guariti', 'deceduti', 'totale_casi','tamponi' ))
-
-df_reg_lig <- subset(df_reg,denominazione_regione=="Liguria", select = c('data','ricoverati_con_sintomi', 'terapia_intensiva','totale_ospedalizzati','isolamento_domiciliare','totale_attualmente_positivi', 'nuovi_attualmente_positivi','dimessi_guariti', 'deceduti', 'totale_casi','tamponi' ))
-
-df_reg_lom 
-df_reg_tos 
-df_reg_vda
+regioni <- c('Toscana','Liguria','Veneto','Lombardia','Puglia','Sicilia','Campania')
 ```
 
 
@@ -232,8 +305,9 @@ df_reg_vda
 
 plot_title_REG_TotCasi<- paste("COVID19 ITA - Alcune Regioni - Totale Casi", actual_date)
 
-plot_REG_TotCasi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=totale_casi, color=denominazione_regione, label=totale_casi)) +
+plot_REG_TotCasi <-df_reg %>% subset(denominazione_regione %in% regioni) %>% ggplot(mapping= aes(x=data, y=totale_casi, color=denominazione_regione, label=totale_casi)) +
   geom_line(size=linesize,)+
+  
   #geom_text( vjust = -1, hjust =+0.5)+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
   scale_y_continuous(trans="log10", limits=c(NA,100000))+
@@ -250,9 +324,9 @@ plot_REG_TotCasi
 ```{r}
 plot_title_REG_Morti<- paste("COVID19 ITA - Alcune Regioni - Morti", actual_date)
 
-plot_REG_Morti <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=deceduti, color=denominazione_regione, label=deceduti)) +
+plot_REG_Morti <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia','Puglia','Sicilia','Campania')) %>% ggplot(mapping= aes(x=data, y=deceduti, color=denominazione_regione, label=deceduti)) +
   geom_line(size=linesize,)+
-  geom_text(size=textsize,  vjust = -1, hjust =+0.5)+
+  #geom_text(size=textsize,  vjust = -1, hjust =+0.5)+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
   scale_y_continuous(trans="log10", limits=c(NA,10000))+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
@@ -267,7 +341,7 @@ plot_REG_Morti
 ```{r}
 plot_title_REG_Tamponi<- paste("COVID19 ITA - Alcune Regioni - Tamponi", actual_date)
 
-plot_REG_Tamponi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=tamponi, color=denominazione_regione, label=tamponi)) +
+plot_REG_Tamponi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia','Puglia','Sicilia','Campania')) %>% ggplot(mapping= aes(x=data, y=tamponi, color=denominazione_regione, label=tamponi)) +
   geom_line(size=linesize,)+
   #geom_text( vjust = -1, hjust =+0.5)+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
@@ -287,9 +361,9 @@ plot_title_REG_TerapiaInt<- paste("COVID19 ITA - Alcune Regioni - Terapia Intens
 
 #source for subsetting: https://stackoverflow.com/questions/5680819/subset-a-data-frame-using-or-when-the-column-contains-a-factor
 
-plot_REG_TerapiaInt <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=terapia_intensiva, color=denominazione_regione, label=terapia_intensiva)) +
+plot_REG_TerapiaInt <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia','Puglia','Sicilia','Campania')) %>% ggplot(mapping= aes(x=data, y=terapia_intensiva, color=denominazione_regione, label=terapia_intensiva)) +
   geom_line(size=linesize,)+
-  geom_text(size=textsize,  vjust = -1, hjust =+0.5)+
+  #geom_text(size=textsize,  vjust = -1, hjust =+0.5)+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
   scale_y_continuous(trans="log10", limits=c(NA,5000))+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
@@ -303,9 +377,9 @@ plot_REG_TerapiaInt
 ```{r}
 plot_title_REG_NuoviCasi<- paste("COVID19 ITA - Alcune Regioni - Nuovi Attualmente Positivi", actual_date)
 
-plot_REG_NuoviCasi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=nuovi_attualmente_positivi, color=denominazione_regione, label=nuovi_attualmente_positivi)) +
+plot_REG_NuoviCasi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia','Puglia','Sicilia','Campania')) %>% ggplot(mapping= aes(x=data, y=nuovi_attualmente_positivi, color=denominazione_regione, label=nuovi_attualmente_positivi)) +
   geom_line(size=linesize,)+
-  geom_text(size=textsize,  vjust = -1, hjust =+0.5)+
+  #geom_text(size=textsize,  vjust = -1, hjust =+0.5)+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
   scale_y_continuous(trans="log10", limits=c(NA,10000))+
   theme(axis.text.x=element_text(angle=45, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
@@ -320,7 +394,7 @@ plot_REG_NuoviCasi
 ```{r}
 plot_title_REG_TotaleAttPosCasi<- paste("COVID19 ITA - Alcune Regioni - Totale Attualmente Positivi", actual_date)
 
-plot_REG_TotaleAttPosCasi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia')) %>% ggplot(mapping= aes(x=data, y=totale_attualmente_positivi, color=denominazione_regione, label=totale_attualmente_positivi)) +
+plot_REG_TotaleAttPosCasi <-df_reg %>% subset(denominazione_regione %in% c('Toscana','Liguria','Veneto','Lombardia','Puglia','Sicilia','Campania')) %>% ggplot(mapping= aes(x=data, y=totale_attualmente_positivi, color=denominazione_regione, label=totale_attualmente_positivi)) +
   geom_line(size=linesize,)+
   #geom_text( vjust = -1, hjust =+0.5)+
   scale_x_date(date_breaks = "2 day", date_labels = "%m-%d")+
@@ -332,6 +406,64 @@ plot_REG_TotaleAttPosCasi <-df_reg %>% subset(denominazione_regione %in% c('Tosc
   annotation_logticks(sides="lr")
 plot_REG_TotaleAttPosCasi
 ```
+```{r}
+stati <- c('IT','JP', 'DE','US','CN','UK','ES')
+
+
+#%>%  slice(which.max(DateRep))
+
+
+plot_title_WRLD_Deaths <- paste("COVID19 - Morti al giorno", actual_date)
+
+plot_World_Deaths <-df_world %>% subset(GeoId %in% stati )%>% ggplot(aes(x=data, y=Deaths, color=`Countries and territories`)) + 
+  geom_line(size=0.75) +
+  
+  geom_point(data = df_world_last, aes(x =data, y = Deaths ,colour = `Countries and territories`), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = df_world_last, aes(x =data, y = Deaths ,label = round(Deaths, 1),colour = `Countries and territories`), size = textsize, vjust =-0.5) +  
+  
+  scale_x_date(date_breaks = "4 day", date_labels = "%m-%d")+
+  scale_y_continuous(breaks = seq(0,1000,100))+
+  theme(axis.text.x=element_text(angle=90, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(color = "",y="Numero casi", x = "Data (mese-giorno)", title =plot_title_WRLD_Deaths)+
+  #scale_y_log10()+
+  geom_abline(a=15, b=15, col="blue")+
+  #annotation_logticks(sides="lr") +
+  labs(caption="Data soruce: https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))
+plot_World_Deaths
+
+
+jpeg("COVID19_wrld_Deaths.jpg", width = high_res_width, height =high_res_height)
+plot_World_Deaths
+while (!is.null(dev.list()))  dev.off()
+
+```
+
+```{r}
+plot_title_WRLD_Cases <- paste("COVID19 - Casi al giorno", actual_date)
+
+plot_World_Cases <-df_world %>% subset(GeoId %in% c('IT','JP', 'DE','US','CN','UK','ES')) %>% ggplot(aes(x=data, y=Cases, color=`Countries and territories`)) + 
+  geom_line(size=0.75) +
+  
+  geom_point(data = df_world_last, aes(x =data, y = Cases ,colour = `Countries and territories`), shape = 21, fill = "white", size = 2, stroke = 1.7) +
+  geom_text(data = df_world_last, aes(x =data, y = Cases ,label = round(Cases, 1),colour = `Countries and territories`), size = textsize, vjust =-0.5) +  
+  
+  scale_x_date(date_breaks = "4 day", date_labels = "%m-%d")+
+  scale_y_continuous(breaks = seq(0,20000,1000))+
+  theme(axis.text.x=element_text(angle=90, vjust=0.5), legend.position = "top",text=element_text(size=fontsize))+
+  labs(color = "",y="Numero casi", x = "Data (mese-giorno)", title =plot_title_WRLD_Cases)+
+  #scale_y_log10()+
+  geom_abline(a=15, b=15, col="blue")+
+  #annotation_logticks(sides="lr") +
+  labs(caption="Data soruce: https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide \nPlot source: https://github.com/JimGuinea/COVID-19-ITA-PLOTS") +
+  theme(plot.caption=element_text(size=fontsize/1.75, hjust=0, margin=margin(15,0,0,0)))
+plot_World_Cases
+
+
+jpeg("COVID19_wrld_Cases.jpg", width = high_res_width, height =high_res_height)
+plot_World_Cases
+while (!is.null(dev.list()))  dev.off()
+```
 
 
 ```{r}
@@ -340,6 +472,7 @@ low_res_height =574
 
 high_res_width =1024
 high_res_height =768
+
 
 
 jpeg("COVID19_ITA_plot_1.jpg", width = high_res_width, height =high_res_height)
@@ -389,6 +522,7 @@ dev.off()
 jpeg("COVID19_ITA_AltCaus_TumResp.jpg", width = high_res_width, height =high_res_height)
 plot_ITA_Log_AltCaus_TumResp
 dev.off()
+
 
 ```
 
